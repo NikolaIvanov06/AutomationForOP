@@ -13,4 +13,6 @@ google-generativeai>=0.7
 playwright>=1.44
 
 # Packaging (dev only)
-pyinstaller>=6.6
+# 6.16+ е нужен за по-нови Python (вкл. 3.13/3.14). Все пак за най-надежден
+# билд се препоръчва Python 3.11/3.12.
+pyinstaller>=6.16

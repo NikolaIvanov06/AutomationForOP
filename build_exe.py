@@ -21,6 +21,30 @@ ICON_PNG = HERE / "assets" / "icon.png"
 ICON_ICO = HERE / "assets" / "icon.ico"
 
 
+def check_python():
+    """Предупреждава при много нова версия на Python.
+
+    PyInstaller + Python 3.14 често дава грешка
+    'Failed to load Python DLL ... python314.dll'. За най-надежден
+    билд използвай Python 3.11 или 3.12.
+    """
+    major, minor = sys.version_info[:2]
+    print(f"→ Python за билда: {major}.{minor} ({sys.executable})")
+    if (major, minor) >= (3, 13):
+        print(
+            "\n⚠️  ВНИМАНИЕ: Python "
+            f"{major}.{minor} е много нов за PyInstaller.\n"
+            "   Това е честа причина за 'Failed to load Python DLL "
+            "(python3XX.dll)'.\n"
+            "   Препоръка: билдвай с Python 3.11 или 3.12, напр.:\n"
+            "       py -3.12 -m venv .venv\n"
+            "       .venv\\Scripts\\activate\n"
+            "       pip install -r requirements.txt && pip install pillow\n"
+            "       python build_exe.py\n"
+            "   Ако оставаш на този Python, трябва PyInstaller >= 6.16.\n"
+        )
+
+
 def ensure_ico():
     """Конвертира PNG -> ICO (нужно за Windows иконка), ако липсва."""
     if ICON_ICO.exists() or not ICON_PNG.exists():
@@ -35,6 +59,7 @@ def ensure_ico():
 
 
 def build():
+    check_python()
     ensure_ico()
     sep = ";" if os.name == "nt" else ":"
 
@@ -77,7 +102,10 @@ def build():
 
     print("→ PyInstaller команда:\n  " + " ".join(cmd))
     subprocess.check_call(cmd, cwd=str(HERE))
-    print("\n✅ Готово! Виж: dist/AutomationForOP/AutomationForOP.exe")
+    print("\n✅ Готово!")
+    print("   Стартирай ИМЕННО този файл (от dist, НЕ от build):")
+    print("       dist/AutomationForOP/AutomationForOP.exe")
+    print("   Папка 'build/' е временна и не се пуска директно.")
 
 
 if __name__ == "__main__":

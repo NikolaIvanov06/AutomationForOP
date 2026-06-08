@@ -77,6 +77,20 @@ python build_exe.py
 > 💡 За macOS/Linux изпълни същия `python build_exe.py` на съответната ОС —
 > ще получиш `.app` / изпълним файл за тази платформа.
 
+### ⚠️ Чести проблеми при билд
+
+- **„Failed to load Python DLL … python3XX.dll … The specified module could
+  not be found."**
+  1. **Стартирай правилния файл.** Готовото приложение е в
+     **`dist\AutomationForOP\AutomationForOP.exe`**, а НЕ в `build\...`.
+     Папка `build\` е временна и не работи директно.
+  2. **Версия на Python.** Тази грешка често идва от твърде нов Python
+     (напр. 3.14) с PyInstaller. Най-надеждно билдвай с **Python 3.11/3.12**.
+     Ако оставаш на 3.14 — трябва `pyinstaller>=6.16`.
+  3. **VC++ Redistributable.** Инсталирай
+     [Microsoft VC++ x64](https://aka.ms/vs/17/release/vc_redist.x64.exe).
+  4. **Чист билд:** `rmdir /s /q build dist` и билдни наново.
+
 ---
 
 ## 👩‍💻 Стартиране за разработка (без билд)
