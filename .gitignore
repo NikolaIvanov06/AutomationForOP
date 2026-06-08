@@ -3,6 +3,9 @@ config.yaml
 output/
 *.log
 
+# Local user-data dir (runtime config + generated output)
+.automationforop/
+
 # Build artifacts
 build/
 dist/
