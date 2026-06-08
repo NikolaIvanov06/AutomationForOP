@@ -1,0 +1,16 @@
+# Core UI
+streamlit>=1.33
+pandas>=2.0
+PyYAML>=6.0
+openpyxl>=3.1
+
+# Desktop window
+pywebview>=5.0
+
+# Optional LIVE-mode features
+imap-tools>=1.6
+openai>=1.30
+playwright>=1.44
+
+# Packaging (dev only)
+pyinstaller>=6.6

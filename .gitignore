@@ -1,0 +1,21 @@
+# Local secrets / runtime
+config.yaml
+output/
+*.log
+
+# Build artifacts
+build/
+dist/
+*.spec
+assets/icon.ico
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+
+# OS
+.DS_Store
+Thumbs.db
