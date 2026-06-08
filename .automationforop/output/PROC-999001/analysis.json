@@ -1,0 +1,21 @@
+{
+  "requires_iso20000": false,
+  "requires_serial_numbers": false,
+  "items": [
+    {
+      "name": "лаптопи",
+      "qty": 0,
+      "unit": "бр.",
+      "specs": ""
+    },
+    {
+      "name": "интерактивни дисплеи",
+      "qty": 0,
+      "unit": "бр.",
+      "specs": ""
+    }
+  ],
+  "warranty_months": 0,
+  "delivery_days": 0,
+  "extracted_text": "Доставка на лаптопи и интерактивни дисплеи за училище"
+}

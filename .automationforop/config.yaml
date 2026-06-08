@@ -1,18 +1,19 @@
 eop:
+  imap_password: app-password
   imap_server: imap.gmail.com
   imap_user: your.email@gmail.com
-  imap_password: app-password
   sender_filter: noreply@eop.bg
 filters:
-  min_budget_bgn: 5000
-  require_iso_20000_skip: true
-  require_serial_numbers_skip: true
   cpv_codes:
   - '30200000'
   - '30213100'
   - '30231300'
   - '32322000'
   - '38652120'
+  keywords_exclude:
+  - софтуер
+  - ремонт
+  - поддръжка
   keywords_include:
   - лаптоп
   - монитор
@@ -20,24 +21,23 @@ filters:
   - таблет
   - VR
   - компютър
-  keywords_exclude:
-  - софтуер
-  - ремонт
-  - поддръжка
-profitability:
-  min_margin_percent: 12
-  shipping_cost_percent: 2.5
-  overhead_bgn: 150
+  min_budget_bgn: 5000
+  require_iso_20000_skip: true
+  require_serial_numbers_skip: true
 polycomp:
   email: sales@polycomp.bg
   your_company_name: Твоята Фирма ООД
   your_contact: Иван Иванов, +35988...
-smtp:
-  server: smtp.gmail.com
-  port: 587
-  user: your.email@gmail.com
-  password: app-password
+profitability:
+  min_margin_percent: 12
+  overhead_bgn: 150
+  shipping_cost_percent: 2.5
 runtime:
   live_mode: false
-  use_scraper: false
   use_ai: false
+  use_scraper: false
+smtp:
+  password: app-password
+  port: 587
+  server: smtp.gmail.com
+  user: your.email@gmail.com
