@@ -30,7 +30,7 @@ def _model():
     if not key:
         raise RuntimeError("Липсва GEMINI_API_KEY")
     genai.configure(api_key=key)
-    model_name = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+    model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
     return genai.GenerativeModel(model_name)
 
 
