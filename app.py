@@ -43,7 +43,7 @@ with st.sidebar:
     live_mode = st.toggle("🔴 LIVE режим", value=config["runtime"]["live_mode"],
                           help="Изключено = DEMO с примерни данни. Включено = реален IMAP/скрейпър/AI.")
     use_scraper = st.checkbox("Playwright скрейпър", value=config["runtime"]["use_scraper"], disabled=not live_mode)
-    use_ai = st.checkbox("OpenAI анализ", value=config["runtime"]["use_ai"], disabled=not live_mode)
+    use_ai = st.checkbox("Gemini анализ", value=config["runtime"]["use_ai"], disabled=not live_mode)
 
     st.divider()
     min_budget = st.number_input("Мин. бюджет (лв)", value=int(config["filters"]["min_budget_bgn"]), step=500)

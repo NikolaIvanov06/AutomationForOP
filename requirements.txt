@@ -9,7 +9,7 @@ pywebview>=5.0
 
 # Optional LIVE-mode features
 imap-tools>=1.6
-openai>=1.30
+google-generativeai>=0.7
 playwright>=1.44
 
 # Packaging (dev only)

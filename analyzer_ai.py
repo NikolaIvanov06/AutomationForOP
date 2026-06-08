@@ -1,6 +1,6 @@
 """
 AI анализ на документи за обществени поръчки.
-Използва OpenAI за извличане на структурирани данни.
+Използва Google Gemini за извличане на структурирани данни.
 Клиентът се създава мързеливо, за да не пада при импорт без ключ.
 """
 import os
@@ -9,7 +9,7 @@ import json
 PROMPT = """
 Ти си експерт по ЗОП. Анализирай този текст от документация за обществена поръчка.
 
-Върни САМО валиден JSON с:
+Върни САМО валиден JSON (без markdown, без ```), със следната структура:
 {{
   "requires_iso20000": true/false,
   "requires_serial_numbers": true/false,
@@ -23,19 +23,27 @@ PROMPT = """
 """
 
 
-def _client():
-    from openai import OpenAI
-    key = os.getenv("OPENAI_API_KEY")
+def _model():
+    """Създава Gemini модел. Изисква GEMINI_API_KEY (или GOOGLE_API_KEY)."""
+    import google.generativeai as genai
+    key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
     if not key:
-        raise RuntimeError("Липсва OPENAI_API_KEY")
-    return OpenAI(api_key=key)
+        raise RuntimeError("Липсва GEMINI_API_KEY")
+    genai.configure(api_key=key)
+    model_name = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+    return genai.GenerativeModel(model_name)
 
 
 def analyze_text(text: str) -> str:
     """Връща JSON стринг с резултата от анализа."""
-    resp = _client().chat.completions.create(
-        model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
-        messages=[{"role": "user", "content": PROMPT.format(text=text[:8000])}],
-        response_format={"type": "json_object"},
+    import google.generativeai as genai
+
+    model = _model()
+    resp = model.generate_content(
+        PROMPT.format(text=text[:8000]),
+        generation_config=genai.types.GenerationConfig(
+            response_mime_type="application/json",
+            temperature=0.1,
+        ),
     )
-    return resp.choices[0].message.content
+    return resp.text

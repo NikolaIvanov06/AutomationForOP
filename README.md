@@ -29,12 +29,13 @@ Workflow: **ЕОП имейл → скрейпър → AI филтър (ISO 2000
 
 | Режим | Какво прави |
 |-------|-------------|
-| 🟢 **DEMO** (по подразбиране) | Работи с примерни данни. Не пипа имейл, интернет или OpenAI. Идеален за тестване и демонстрация. |
-| 🔴 **LIVE** | Реален IMAP за ЕОП имейли, по избор Playwright скрейпър и OpenAI анализ. |
+| 🟢 **DEMO** (по подразбиране) | Работи с примерни данни. Не пипа имейл, интернет или Gemini. Идеален за тестване и демонстрация. |
+| 🔴 **LIVE** | Реален IMAP за ЕОП имейли, по избор Playwright скрейпър и Google Gemini анализ. |
 
 В LIVE режим можеш да включиш допълнително:
 - ☑️ **Playwright скрейпър** — сваля реални данни от `app.eop.bg`
-- ☑️ **OpenAI анализ** — изисква `OPENAI_API_KEY` като environment variable
+- ☑️ **Gemini анализ** — изисква `GEMINI_API_KEY` (или `GOOGLE_API_KEY`) като environment variable.
+  По избор `GEMINI_MODEL` (по подразбиране `gemini-1.5-flash`).
 
 ---
 
@@ -103,7 +104,7 @@ AutomationForOP/
 ├─ desktop_app.py        # Десктоп launcher (pywebview + Streamlit подпроцес)
 ├─ app.py                # Streamlit UI (табове, настройки, калкулатор)
 ├─ automation.py         # Ядро: имейл → анализ → филтри → имейл/оферта
-├─ analyzer_ai.py        # OpenAI анализ (LIVE)
+├─ analyzer_ai.py        # Google Gemini анализ (LIVE)
 ├─ scraper_eop.py        # Playwright скрейпър за app.eop.bg (LIVE)
 ├─ paths.py              # Пътища за dev и за .exe + потребителска папка
 ├─ config.example.yaml   # Примерна конфигурация
@@ -120,5 +121,5 @@ AutomationForOP/
 
 - IMAP паролата се пази локално в `%APPDATA%\AutomationForOP\config.yaml`.
   За Gmail използвай **App Password**, не основната парола.
-- `OPENAI_API_KEY` се чете от environment, не се записва в config.
+- `GEMINI_API_KEY` се чете от environment, не се записва в config.
 - `config.yaml` (с реални данни) **не** се качва в Git — виж `.gitignore`.

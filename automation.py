@@ -5,7 +5,7 @@
 
 Поддържа два режима:
   - DEMO (по подразбиране): използва примерни данни, не пипа реални услуги
-  - LIVE: реален IMAP, реален Playwright скрейпър, реален OpenAI анализ
+  - LIVE: реален IMAP, реален Playwright скрейпър, реален Gemini анализ
 Режимът се управлява от config.yaml -> runtime.live_mode (true/false).
 """
 import yaml
@@ -155,10 +155,10 @@ def analyze_documents(proc, config=None, log=None):
     live = config.get("runtime", {}).get("live_mode", False)
     use_ai = config.get("runtime", {}).get("use_ai", False)
 
-    if live and use_ai and os.getenv("OPENAI_API_KEY"):
+    if live and use_ai and (os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")):
         try:
             from analyzer_ai import analyze_text
-            _log(log, "→ AI анализ с OpenAI...")
+            _log(log, "→ AI анализ с Google Gemini...")
             text = "\n".join(d.get("text", "") for d in proc.get("documents", [])) or proc.get("title", "")
             raw = analyze_text(text)
             data = json.loads(raw)
