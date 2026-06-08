@@ -2,27 +2,39 @@
 """
 Desktop launcher за Автоматизация Обществени Поръчки.
 
-Стартира Streamlit сървъра в отделен процес и го показва в нативен
-прозорец чрез pywebview. За потребителя изглежда и работи като
-обикновено настолно приложение — без браузър, без терминал.
+Стартира Streamlit сървъра и го показва в нативен прозорец чрез pywebview.
+За потребителя изглежда и работи като обикновено настолно приложение —
+без браузър, без терминал.
 
 Стартиране в dev:   python desktop_app.py
 Билд на .exe:        виж build_exe.py / README
+
+⚠️ ВАЖНО (fork-bomb fix):
+В замразен .exe `sys.executable` сочи към САМИЯ .exe, а не към python.exe.
+Затова `[sys.executable, "-m", "streamlit", ...]` НЕ стартира Streamlit, а
+пуска отново лаунчъра → нов прозорец → пак лаунчъра → ... безкрайно
+(десетки прозорци, "streamlit timeout"). За да не се случва това:
+
+  • Когато сме замразени, стартираме Streamlit В СЪЩИЯ процес чрез
+    streamlit.web.bootstrap (никакъв нов .exe не се пуска).
+  • Имаме и guard през променлива на средата като втора защита: ако някак
+    се преекзекутираме, новият процес директно подкарва Streamlit, а не GUI.
 """
 import os
 import sys
 import time
 import socket
 import threading
-import subprocess
+import multiprocessing
 from contextlib import closing
-
-import webview
 
 from paths import resource_path
 
 APP_TITLE = "Автоматизация Обществени Поръчки"
 HOST = "127.0.0.1"
+
+# Маркер: ако е зададен, текущият процес трябва да е Streamlit worker, не GUI.
+_CHILD_ENV = "AUTOMATIONFOROP_STREAMLIT_CHILD"
 
 
 def find_free_port() -> int:
@@ -42,54 +54,92 @@ def wait_for_server(port: int, timeout: float = 60.0) -> bool:
     return False
 
 
-def start_streamlit(port: int) -> subprocess.Popen:
-    """Стартира `streamlit run app.py` като подпроцес."""
+def _set_streamlit_env(port: int) -> None:
+    os.environ["STREAMLIT_SERVER_HEADLESS"] = "true"
+    os.environ["STREAMLIT_SERVER_PORT"] = str(port)
+    os.environ["STREAMLIT_SERVER_ADDRESS"] = HOST
+    os.environ["STREAMLIT_BROWSER_GATHER_USAGE_STATS"] = "false"
+    os.environ["STREAMLIT_SERVER_FILE_WATCHER_TYPE"] = "none"
+    os.environ["STREAMLIT_GLOBAL_DEVELOPMENT_MODE"] = "false"
+    os.environ["STREAMLIT_SERVER_RUN_ON_SAVE"] = "false"
+    os.environ["PYTHONPATH"] = (
+        str(resource_path(".")) + os.pathsep + os.environ.get("PYTHONPATH", "")
+    )
+
+
+def run_streamlit_inprocess(port: int) -> None:
+    """Стартира Streamlit В ТЕКУЩИЯ процес (без нов .exe).
+
+    Това е ключовата разлика спрямо предишната версия — не извикваме
+    subprocess със sys.executable, който в замразен .exe пуска самия .exe
+    наново и води до безкраен порой от прозорци.
+    """
+    _set_streamlit_env(port)
     app_py = str(resource_path("app.py"))
 
-    env = os.environ.copy()
-    env["STREAMLIT_SERVER_HEADLESS"] = "true"
-    env["STREAMLIT_SERVER_PORT"] = str(port)
-    env["STREAMLIT_SERVER_ADDRESS"] = HOST
-    env["STREAMLIT_BROWSER_GATHER_USAGE_STATS"] = "false"
-    env["STREAMLIT_SERVER_FILE_WATCHER_TYPE"] = "none"
-    env["STREAMLIT_GLOBAL_DEVELOPMENT_MODE"] = "false"
-    env["STREAMLIT_SERVER_RUN_ON_SAVE"] = "false"
-    # Гарантира, че локалните модули се намират
-    env["PYTHONPATH"] = str(resource_path(".")) + os.pathsep + env.get("PYTHONPATH", "")
+    from streamlit import config as st_config
+    from streamlit.web import bootstrap
 
-    if getattr(sys, "frozen", False):
-        # В bundle: викаме streamlit като модул със същия интерпретатор
-        cmd = [sys.executable, "-m", "streamlit", "run", app_py,
-               "--server.port", str(port), "--server.address", HOST,
-               "--server.headless", "true",
-               "--browser.gatherUsageStats", "false"]
-    else:
-        cmd = [sys.executable, "-m", "streamlit", "run", app_py,
-               "--server.port", str(port), "--server.address", HOST,
-               "--server.headless", "true",
-               "--browser.gatherUsageStats", "false"]
+    # Изчистваме argv, за да не обърка Streamlit/Click.
+    sys.argv = ["streamlit", "run", app_py]
 
-    creationflags = 0
-    if os.name == "nt":
-        creationflags = subprocess.CREATE_NO_WINDOW  # скрива конзолата
-
-    return subprocess.Popen(cmd, env=env, creationflags=creationflags)
-
-
-def main():
-    port = find_free_port()
-    proc = start_streamlit(port)
-
-    url = f"http://{HOST}:{port}"
-
-    def on_closed():
-        # Затваряме Streamlit когато прозорецът се затвори
+    # Налагаме настройките ДИРЕКТНО в config-а. Само env променливи не са
+    # надеждни (config модулът може вече да е зареден), затова сме изрични.
+    flag_options = {
+        "server.port": port,
+        "server.address": HOST,
+        "server.headless": True,
+        "browser.gatherUsageStats": False,
+        "global.developmentMode": False,
+        "server.fileWatcherType": "none",
+        "server.runOnSave": False,
+    }
+    for key, value in flag_options.items():
         try:
-            proc.terminate()
+            st_config.set_option(key, value)
         except Exception:
             pass
 
-    # Изчакваме сървъра (в нишка, за да не блокираме UI thread-а)
+    try:
+        # По-нови версии на Streamlit
+        bootstrap.run(app_py, False, [], flag_options)
+    except TypeError:
+        # По-стари сигнатури: run(file, command_line, args, flag_options)
+        bootstrap.run(app_py, "", [], flag_options)
+
+
+def _start_streamlit_process(port: int) -> "multiprocessing.Process":
+    """Подкарва Streamlit в отделен ПРОЦЕС чрез multiprocessing.
+
+    Защо процес, а не нишка:
+      • Streamlit (bootstrap.run) слага signal handlers, които работят само
+        в ГЛАВНАТА нишка на процеса. В нишка хвърля
+        "signal only works in main thread".
+      • multiprocessing + freeze_support() стартира детето БЕЗОПАСНО: в
+        замразен .exe детето се пуска като worker за зададената функция, а
+        НЕ като нов GUI → няма порой от прозорци (fork bomb).
+    """
+    ctx = multiprocessing.get_context("spawn")
+    p = ctx.Process(target=run_streamlit_inprocess, args=(port,), daemon=True)
+    p.start()
+    return p
+
+
+def gui_main():
+    """Главният GUI процес: вдига Streamlit (в отделен процес) и показва прозорец."""
+    import webview  # импортираме тук, за да не товари Streamlit worker-а
+
+    port = find_free_port()
+    proc = _start_streamlit_process(port)
+    url = f"http://{HOST}:{port}"
+
+    def shutdown():
+        try:
+            if proc.is_alive():
+                proc.terminate()
+        except Exception:
+            pass
+
     ready = {"ok": False}
 
     def boot():
@@ -100,11 +150,7 @@ def main():
     t.join(timeout=65)
 
     if not ready["ok"]:
-        try:
-            proc.terminate()
-        except Exception:
-            pass
-        # Показваме грешка в прозорец
+        shutdown()
         webview.create_window(APP_TITLE, html=_error_html())
         webview.start()
         return
@@ -116,11 +162,10 @@ def main():
         height=860,
         min_size=(1000, 700),
     )
-    window.events.closed += on_closed
+    window.events.closed += shutdown
     webview.start()
-
-    # подсигуряване след затваряне
-    on_closed()
+    shutdown()
+    os._exit(0)
 
 
 def _error_html() -> str:
@@ -133,5 +178,18 @@ def _error_html() -> str:
     """
 
 
+def main():
+    # Втора защита срещу "fork bomb": ако сме били преекзекутирани като
+    # Streamlit дете, не вдигаме GUI, а директно пускаме сървъра.
+    child_port = os.environ.get(_CHILD_ENV)
+    if child_port:
+        run_streamlit_inprocess(int(child_port))
+        return
+    gui_main()
+
+
 if __name__ == "__main__":
+    # КРИТИЧНО за замразени .exe: без freeze_support() multiprocessing/спауни
+    # могат да рестартират целия .exe и да наплодят прозорци.
+    multiprocessing.freeze_support()
     main()

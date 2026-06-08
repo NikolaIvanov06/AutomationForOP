@@ -87,6 +87,8 @@ def build():
         "--copy-metadata", "streamlit",
         # Скрити импорти, които PyInstaller често пропуска:
         "--hidden-import", "streamlit.runtime.scriptrunner.magic_funcs",
+        "--hidden-import", "streamlit.web.bootstrap",
+        "--hidden-import", "streamlit.web.cli",
         "--hidden-import", "yaml",
         "--hidden-import", "openpyxl",
         "--hidden-import", "webview",
